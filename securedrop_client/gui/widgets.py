@@ -108,7 +108,10 @@ class MainView(QWidget):
         left_layout = QVBoxLayout()
         left_column.setLayout(left_layout)
         self.status = QLabel(_('Waiting to Synchronize'))
+        self.error_status = QLabel('')
+        self.error_status.setObjectName('error_label')
         left_layout.addWidget(self.status)
+        left_layout.addWidget(self.error_status)
         filter_widget = QWidget()
         filter_layout = QHBoxLayout()
         filter_widget.setLayout(filter_layout)
@@ -125,6 +128,16 @@ class MainView(QWidget):
         self.view_holder.setLayout(self.view_layout)
         self.layout.addWidget(self.view_holder, 6)
 
+    def setup(self, controller):
+        """
+        Pass through the controller object to this widget.
+        """
+        self.controller = controller
+        self.source_list.setup(controller)
+
+    def update_error_status(self, error=None):
+        self.error_status.setText(error)
+
     def update_view(self, widget):
         """
         Update the view holder to contain the referenced widget.
@@ -138,6 +151,15 @@ class SourceList(QListWidget):
     Displays the list of sources.
     """
 
+    def __init__(self, parent):
+        super().__init__(parent)
+
+    def setup(self, controller):
+        """
+        Pass through the controller object to this widget.
+        """
+        self.controller = controller
+
     def update(self, sources):
         """
         Reset and update the list with the passed in list of sources.
@@ -145,6 +167,7 @@ class SourceList(QListWidget):
         self.clear()
         for source in sources:
             new_source = SourceWidget(self, source)
+            new_source.setup(self.controller)
             list_item = QListWidgetItem(self)
             list_item.setSizeHint(new_source.sizeHint())
             self.addItem(list_item)
@@ -162,8 +185,8 @@ class SourceWidget(QWidget):
         """
         super().__init__(parent)
         self.source = source
-        self.layout = QVBoxLayout()
-        self.setLayout(self.layout)
+        layout = QVBoxLayout()
+        self.setLayout(layout)
         self.summary = QWidget(self)
         self.summary_layout = QHBoxLayout()
         self.summary.setLayout(self.summary_layout)
@@ -173,13 +196,19 @@ class SourceWidget(QWidget):
         self.summary_layout.addWidget(self.name)
         self.summary_layout.addStretch()
         self.summary_layout.addWidget(self.attached)
-        self.layout.addWidget(self.summary)
+        layout.addWidget(self.summary)
         self.updated = QLabel()
-        self.layout.addWidget(self.updated)
+        layout.addWidget(self.updated)
         self.details = QLabel()
         self.details.setWordWrap(True)
-        self.layout.addWidget(self.details)
+        layout.addWidget(self.details)
         self.update()
+
+    def setup(self, controller):
+        """
+        Pass through the controller object to this widget.
+        """
+        self.controller = controller
 
     def display_star_icon(self):
         """
@@ -214,7 +243,8 @@ class SourceWidget(QWidget):
         """
         Called when the star is clicked.
         """
-        logging.info('click')
+        self.controller.update_star(self.source)
+
 
 class LoginView(QWidget):
     """

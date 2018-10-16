@@ -69,6 +69,7 @@ class Window(QMainWindow):
         self.controller = controller  # Reference the Client logic instance.
         self.tool_bar.setup(self, controller)
         self.login_view = LoginView(self, self.controller)
+        self.main_view.setup(self.controller)
 
     def autosize_window(self):
         """
@@ -87,6 +88,12 @@ class Window(QMainWindow):
         if error:
             self.login_view.error(error)
         self.main_view.update_view(self.login_view)
+
+    def update_error_status(self, error=None):
+        """
+        Show an error message on the sidebar.
+        """
+        self.main_view.update_error_status(error)
 
     def show_sources(self, sources):
         """
