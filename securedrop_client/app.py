@@ -31,14 +31,15 @@ from securedrop_client.logic import Client
 from securedrop_client.gui.main import Window
 from securedrop_client.resources import load_icon, load_css
 from securedrop_client.models import engine
+from securedrop_client.utils import safe_mkdir
 
 
-DEFAULT_HOME = os.path.expanduser('~/.securedrop_client')
+DEFAULT_SDC_HOME = os.path.expanduser('~/.securedrop_client')
 ENCODING = 'utf-8'
 
 
-def init(home: str) -> None:
-    os.makedirs(home, exist_ok=True)
+def init(sdc_home: str) -> None:
+    safe_mkdir(sdc_home)
 
 
 def excepthook(*exc_args):
@@ -51,11 +52,12 @@ def excepthook(*exc_args):
     sys.exit(1)
 
 
-def configure_logging(home: str) -> None:
+def configure_logging(sdc_home: str) -> None:
     """
     All logging related settings are set up by this function.
     """
-    log_file = os.path.join(home, 'client.log')
+    safe_mkdir(sdc_home, 'logs')
+    log_file = os.path.join(sdc_home, 'logs', 'client.log')
 
     # set logging format
     log_fmt = ('%(asctime)s - %(name)s:%(lineno)d(%(funcName)s) '
@@ -79,8 +81,8 @@ def arg_parser() -> ArgumentParser:
     parser = ArgumentParser('securedrop-client',
                             description='SecureDrop Journalist GUI')
     parser.add_argument(
-        '-H', '--home', default=DEFAULT_HOME,
-        help='Home directory for storing files and state')
+        '-H', '--sdc-home', default=DEFAULT_SDC_HOME,
+        help='SecureDrop Client home directory for storing files and state')
     return parser
 
 
@@ -97,8 +99,8 @@ def start_app(args, qt_args) -> None:
     - configure the client (logic) object.
     - ensure the application is setup in the default safe starting state.
     """
-    init(args.home)
-    configure_logging(args.home)
+    init(args.sdc_home)
+    configure_logging(args.sdc_home)
     logging.info('Starting SecureDrop Client {}'.format(__version__))
 
     app = QApplication(qt_args)
@@ -114,7 +116,7 @@ def start_app(args, qt_args) -> None:
     Session = sessionmaker(bind=engine)
     session = Session()
 
-    client = Client("http://localhost:8081/", gui, session)
+    client = Client("http://localhost:8081/", gui, session, args.sdc_home)
     client.setup()
 
     def signal_handler(*nargs) -> None:
